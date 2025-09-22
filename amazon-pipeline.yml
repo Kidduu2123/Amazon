@@ -7,30 +7,29 @@ pool:
   name: 'agent1'  # Your self-hosted agent
 
 variables:
-  imageName: 'amazon-webapp'
+  imageName: 'amazoncr.azurecr.io/amazon-webapp'
 
 steps:
 - checkout: self
 
-- task: Maven@3
-  inputs:
-    mavenPomFile: 'Amazon/pom.xml'
-    goals: 'package'
-    options: '-DskipTests'
+# Maven task skipped because WAR is prebuilt
+# - task: Maven@3
+#   inputs:
+#     mavenPomFile: 'Amazon/pom.xml'
+#     goals: 'package'
+#     options: '-DskipTests'
 
-# ✅ Correct Docker Registry connection (ACR)
 - task: Docker@2
   inputs:
-    containerRegistry: 'amazon-service-connection'  # ✅ This is the dockerregistry connection
+    containerRegistry: 'amazon-service-connection'  # Docker Registry service connection pointing to ACR
     repository: '$(imageName)'
     command: 'buildAndPush'
     Dockerfile: 'Dockerfile'
     tags: |
       latest
 
-# ✅ Correct AzureRM connection for App Service
 - task: AzureWebAppContainer@1
   inputs:
-    azureSubscription: 'amazon-arm-connection'  # ✅ This is the Azure Resource Manager connection
+    azureSubscription: 'amazon-arm-connection'  # ARM service connection
     appName: 'amazonp'
-    containers: 'amazoncr.azurecr.io/$(imageName):latest'
+    containers: '$(imageName):latest'
