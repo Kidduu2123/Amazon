@@ -1,6 +1,6 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
-name: Build and deploy JAR app to Azure Web App - amazonp1
+name: Build and deploy WAR app to Azure Web App - amazonp1
 
 on:
   push:
@@ -15,23 +15,24 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Java version
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'microsoft'
 
       - name: Build with Maven
-        run: mvn clean install
-        working-directory: Amazon  # 👈 THIS is the key fix
+        run: mvn clean package
+        working-directory: Amazon/Amazon-Web
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: java-app
-          path: 'Amazon/Amazon/target/*.jar'  # 👈 ALSO fixed path
+          name: war-app
+          path: Amazon/Amazon-Web/target/Amazon.war
 
   deploy:
     runs-on: ubuntu-latest
@@ -44,20 +45,19 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: java-app
+          name: war-app
 
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_FA71CF3CB5594C2CA64FE264F185A4DF }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A856EB4B339C4047BA33ACF07CB24799 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_86C42EA20B994F0C9951B68CE358EF65 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_... }}        # replace with your secret
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_... }}          # replace
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_... }} # replace
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'amazonp1'
+          app-name: 'amazonp1'       # your Azure Web App name
           slot-name: 'Production'
-          package: '*.jar'  # This works since the artifact is downloaded to the root of runner
-
+          package: '*.war'
