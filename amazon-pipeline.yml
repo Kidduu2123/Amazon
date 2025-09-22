@@ -1,0 +1,34 @@
+trigger:
+  branches:
+    include:
+      - app
+
+pool:
+  name: 'agent1'   # Your self-hosted agent pool name
+
+variables:
+  imageName: 'amazon-webapp'
+
+steps:
+- checkout: self
+
+- task: Maven@3
+  inputs:
+    mavenPomFile: 'Amazon/pom.xml'
+    goals: 'package'
+    options: '-DskipTests'
+
+- task: Docker@2
+  inputs:
+    containerRegistry: 'amazon-service-connection'  # Your Docker Registry service connection name (ACR)
+    repository: '$(imageName)'
+    command: 'buildAndPush'
+    Dockerfile: 'Dockerfile'
+    tags: |
+      latest
+
+- task: AzureWebAppContainer@1
+  inputs:
+    azureSubscription: 'amazon-arm-connection'    # Your Azure Resource Manager service connection name
+    appName: 'amazonp'                            # Your Azure Web App name
+    containers: 'amazoncr.azurecr.io/$(imageName):latest'
