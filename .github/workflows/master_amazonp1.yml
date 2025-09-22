@@ -24,15 +24,15 @@ jobs:
           java-version: '17'
           distribution: 'microsoft'
 
-      - name: Build with Maven
+      - name: Build entire project (multi-module)
         run: mvn clean package
-        working-directory: Amazon/Amazon-Web
+        working-directory: Amazon  # ✅ Build from the parent folder
 
-      - name: Upload artifact for deployment job
+      - name: Upload WAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: war-app
-          path: Amazon/Amazon-Web/target/Amazon.war
+          path: Amazon/Amazon-Web/target/Amazon.war  # ✅ WAR location stays the same
 
   deploy:
     runs-on: ubuntu-latest
@@ -42,7 +42,7 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download artifact from build job
+      - name: Download WAR artifact
         uses: actions/download-artifact@v4
         with:
           name: war-app
@@ -54,3 +54,4 @@ jobs:
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: '*.war'
+
