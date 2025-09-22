@@ -4,7 +4,7 @@ trigger:
       - app
 
 pool:
-  name: 'agent1'   # Your self-hosted agent pool name
+  name: 'agent1'  # Your self-hosted agent
 
 variables:
   imageName: 'amazon-webapp'
@@ -20,7 +20,7 @@ steps:
 
 - task: Docker@2
   inputs:
-    containerRegistry: 'amazon-service-connection'  # Your Docker Registry service connection name (ACR)
+    containerRegistry: 'amazon-service-connection'  # ACR service connection
     repository: '$(imageName)'
     command: 'buildAndPush'
     Dockerfile: 'Dockerfile'
@@ -29,6 +29,6 @@ steps:
 
 - task: AzureWebAppContainer@1
   inputs:
-    azureSubscription: 'amazon-arm-connection'    # Your Azure Resource Manager service connection name
-    appName: 'amazonp'                            # Your Azure Web App name
+    azureSubscription: 'amazon-service-connection'  # 🔁 updated to match your existing service connection
+    appName: 'amazonp'
     containers: 'amazoncr.azurecr.io/$(imageName):latest'
