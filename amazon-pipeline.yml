@@ -21,7 +21,7 @@ steps:
 
 - task: Docker@2
   inputs:
-    containerRegistry: 'amazon-service-connection'  # Docker Registry service connection pointing to ACR
+    containerRegistry: 'dockerhub-connection'  # Docker Registry service connection pointing to ACR
     repository: '$(imageName)'
     command: 'buildAndPush'
     Dockerfile: 'Dockerfile'
