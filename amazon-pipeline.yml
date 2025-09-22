@@ -18,17 +18,19 @@ steps:
     goals: 'package'
     options: '-DskipTests'
 
+# ✅ Correct Docker Registry connection (ACR)
 - task: Docker@2
   inputs:
-    containerRegistry: 'amazon-arm-connection'  # ACR service connection
+    containerRegistry: 'amazon-service-connection'  # ✅ This is the dockerregistry connection
     repository: '$(imageName)'
     command: 'buildAndPush'
     Dockerfile: 'Dockerfile'
     tags: |
       latest
 
+# ✅ Correct AzureRM connection for App Service
 - task: AzureWebAppContainer@1
   inputs:
-    azureSubscription: 'amazon-service-connection'  # 🔁 updated to match your existing service connection
+    azureSubscription: 'amazon-arm-connection'  # ✅ This is the Azure Resource Manager connection
     appName: 'amazonp'
     containers: 'amazoncr.azurecr.io/$(imageName):latest'
