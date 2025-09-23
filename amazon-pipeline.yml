@@ -1,35 +1,66 @@
 trigger:
   branches:
     include:
-      - app
+      - master  # or your active branch
 
 pool:
-  name: 'agent1'  # Your self-hosted agent
+  vmImage: 'ubuntu-latest'
 
 variables:
-  imageName: 'pavani687/amazon-webapp'
+  dockerHubUser: '<your-dockerhub-username>'
+  imageName: 'amazon'
+  tag: 'latest'
 
-steps:
-- checkout: self
+stages:
+# Stage 1: Build the WAR and Docker image
+- stage: BuildAndPush
+  jobs:
+  - job: Build
+    steps:
+    - checkout: self
 
-# Maven build skipped (WAR prebuilt)
-# - task: Maven@3
-#   inputs:
-#     mavenPomFile: 'Amazon/pom.xml'
-#     goals: 'package'
-#     options: '-DskipTests'
+    - task: Maven@3
+      displayName: 'Build with Maven'
+      inputs:
+        mavenPomFile: 'Amazon/pom.xml'
+        goals: 'clean package'
+        options: '-DskipTests'
 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'docker-hub-connection'  # Docker Hub service connection
-    repository: '$(imageName)'
-    command: 'buildAndPush'
-    Dockerfile: 'Dockerfile'
-    tags: |
-      latest
+    - task: Docker@2
+      displayName: 'Build and Push Docker Image'
+      inputs:
+        containerRegistry: 'docker-hub-connection'  # Azure DevOps service connection
+        repository: '$(dockerHubUser)/$(imageName)'
+        command: 'buildAndPush'
+        Dockerfile: 'Dockerfile'
+        tags: |
+          $(tag)
 
-- task: AzureWebAppContainer@1
-  inputs:
-    azureSubscription: 'amazon-arm-connection'  # Azure subscription connection
-    appName: 'amazonp'
-    containers: 'pavani687/amazon-webapp:latest'
+# Stage 2: Deploy using Docker Compose on remote VM
+- stage: Deploy
+  dependsOn: BuildAndPush
+  jobs:
+  - deployment: DeployToVM
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: CopyFilesOverSSH@0
+            displayName: 'Copy docker-compose to VM'
+            inputs:
+              sshEndpoint: 'docker-host-ssh'  # SSH service connection
+              sourceFolder: '$(Build.SourcesDirectory)'
+              contents: |
+                docker-compose.yml
+              targetFolder: '/home/azureuser/deploy'
+
+          - task: SSH@0
+            displayName: 'Deploy via Docker Compose'
+            inputs:
+              sshEndpoint: 'docker-host-ssh'
+              runOptions: 'commands'
+              commands: |
+                cd /home/azureuser/deploy
+                docker-compose pull
+                docker-compose up -d
