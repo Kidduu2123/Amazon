@@ -59,8 +59,11 @@ stages:
             displayName: 'Deploy via Docker Compose'
             inputs:
               sshEndpoint: 'docker-host-ssh'
-              runOptions: 'commands'
-              commands: |
+              runOptions: 'inline'
+              inline: |
                 cd /home/azureuser/deploy
-                docker-compose pull
-                docker-compose up -d
+                echo "Pulling docker images..."
+                docker-compose pull 2>&1 | tee docker_pull.log
+
+                echo "Starting containers..."
+                docker-compose up -d 2>&1 | tee docker_up.log
